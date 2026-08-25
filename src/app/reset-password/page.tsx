@@ -17,10 +17,18 @@ function ResetPasswordForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [linkValid, setLinkValid] = useState(false);
 
   useEffect(() => {
     const code = searchParams.get("code");
+    const errorParam = searchParams.get("error_description");
     const type = searchParams.get("type");
+
+    if (errorParam) {
+      setError(errorParam.replace(/\+/g, " "));
+      setLoading(false);
+      return;
+    }
 
     if (code) {
       exchangeCode(code);
@@ -34,10 +42,13 @@ function ResetPasswordForm() {
 
   const exchangeCode = async (code: string) => {
     const supabase = createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (error) {
-      setError("This reset link has expired or is invalid. Please request a new one.");
+    if (error || !data.session) {
+      setError(error?.message || "This reset link has expired or is invalid. Please request a new one.");
+      setLinkValid(false);
+    } else {
+      setLinkValid(true);
     }
 
     setLoading(false);
@@ -80,6 +91,28 @@ function ResetPasswordForm() {
           </div>
           <h1 className="text-2xl font-bold mb-2">Verifying link</h1>
           <p className="text-muted">Please wait while we verify your reset link...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && !linkValid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-danger" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Link invalid</h1>
+          <p className="text-muted mb-6">
+            {error || "This reset link has expired or is invalid. Please request a new one."}
+          </p>
+          <Link href="/forgot-password">
+            <Button variant="default">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Request new link
+            </Button>
+          </Link>
         </div>
       </div>
     );

@@ -92,7 +92,7 @@ export default function SignupPage() {
       if (signUpError) {
         setError(getGracefulError(signUpError.message));
       } else {
-        // Notify admin of new registration
+        // Notify admin and welcome user
         fetch("/api/notify-registration", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -102,6 +102,16 @@ export default function SignupPage() {
             country: formData.country,
           }),
         }).catch(() => {});
+
+        fetch("/api/welcome-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName: formData.fullName,
+            email: formData.email,
+          }),
+        }).catch(() => {});
+
         setSuccess(true);
       }
     } catch {
